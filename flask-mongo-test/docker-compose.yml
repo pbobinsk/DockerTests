@@ -1,0 +1,27 @@
+version: "6.66"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: web
+    ports:
+      - 8080:5000
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    volumes: 
+      - mongodb:/data/db
+      - mongodb_config:/data/confindb
+    ports:
+      - 27018:27017
+    command: mongod
+  
+volumes:
+  mongodb:
+  mongodb_config:
+
+    
+
