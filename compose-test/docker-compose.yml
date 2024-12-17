@@ -1,0 +1,25 @@
+version: "6.66"
+
+services:
+  web:
+    image: pbobinsk/flask-mongo-test
+    container_name: web2
+    ports:
+      - 8090:5000
+
+  mongo:
+    image: mongo
+    container_name: mongo2
+    volumes: 
+      - mongodb:/data/db
+      - mongodb_config:/data/confindb
+    ports:
+      - 27017:27017
+    command: mongod
+  
+volumes:
+  mongodb:
+  mongodb_config:
+
+    
+
