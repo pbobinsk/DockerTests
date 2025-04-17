@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  webapp:
+    build: ./webapp
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://moj_uzytkownik:super_tajne_haslo@db:5432/moja_aplikacja_db
+      - REDIS_URL=redis://cache:6379/0
+      - SECRET_KEY=bardzo_inny_sekretny_klucz_aplikacji
+      - DEBUG=True # Ustaw na False dla produkcji!
+      - PYTHONUNBUFFERED=1 # Pomocne przy logowaniu w Pythonie
+    depends_on:
+      - db
+      - cache
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=moja_aplikacja_db
+      - POSTGRES_USER=moj_uzytkownik
+      - POSTGRES_PASSWORD=super_tajne_haslo
+  cache:
+    image: redis:7-alpine
+volumes:
+  postgres_data: # Wolumen dla danych PostgreSQL

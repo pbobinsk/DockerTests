@@ -1,0 +1,80 @@
+# Wersja specyfikacji Docker Compose (opcjonalna w nowszych wersjach Docker Compose)
+version: '3.8'
+
+services:
+  # ----- Serwis Aplikacji Webowej -----
+  webapp:
+    # Zakładamy, że Dockerfile dla aplikacji znajduje się w katalogu ./webapp
+    build: ./webapp
+    # Mapowanie portu: Udostępnia port 8000 kontenera na porcie 8000 maszyny hosta
+    ports:
+      - "8000:8000"
+    # Zmienne środowiskowe dla aplikacji webowej
+    # Aplikacja musi być napisana tak, aby odczytywać te zmienne
+    environment:
+      # Adres URL do połączenia z bazą danych PostgreSQL
+      # Używamy nazwy serwisu 'db' jako hostname, Docker Compose zapewni resolucję DNS
+      # Format: postgresql://<user>:<password>@<hostname>:<port>/<database_name>
+      - DATABASE_URL=postgresql://moj_uzytkownik:super_tajne_haslo@db:5432/moja_aplikacja_db
+      # Adres URL do połączenia z serwerem Redis
+      # Używamy nazwy serwisu 'cache' jako hostname
+      # Format: redis://<hostname>:<port>/<database_number>
+      - REDIS_URL=redis://cache:6379/0
+      # Inne potencjalne zmienne, np. klucz sekretny, tryb debugowania
+      - SECRET_KEY=bardzo_inny_sekretny_klucz_aplikacji
+      - DEBUG=True # Ustaw na False dla produkcji!
+      - PYTHONUNBUFFERED=1 # Pomocne przy logowaniu w Pythonie
+    # Definicja zależności startowych
+    # 'webapp' wystartuje dopiero PO uruchomieniu kontenerów 'db' i 'cache'
+    # Uwaga: To gwarantuje tylko kolejność startu, nie to, że 'db' lub 'cache' są w pełni gotowe
+    # do przyjmowania połączeń. W aplikacji mogą być potrzebne mechanizmy ponawiania prób.
+    depends_on:
+      - db
+      - cache
+    # Opcjonalnie: można podmontować kod aplikacji dla trybu deweloperskiego
+    # volumes:
+    #   - ./webapp:/app # Mapuje lokalny katalog ./webapp do /app w kontenerze
+
+  # ----- Serwis Bazy Danych (PostgreSQL) -----
+  db:
+    # Użycie oficjalnego obrazu PostgreSQL (wersja 15, wariant Alpine dla mniejszego rozmiaru)
+    image: postgres:15-alpine
+    # Wolumen do przechowywania danych bazy danych
+    # 'postgres_data' to nazwany wolumen zarządzany przez Docker (zdefiniowany poniżej)
+    # '/var/lib/postgresql/data' to standardowa ścieżka danych w kontenerze Postgres
+    # Dzięki temu dane przetrwają restarty i usunięcie kontenera 'db'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Zmienne środowiskowe wymagane przez obraz PostgreSQL do inicjalizacji bazy
+    # Muszą zgadzać się z danymi użytymi w DATABASE_URL serwisu 'webapp'
+    environment:
+      - POSTGRES_DB=moja_aplikacja_db
+      - POSTGRES_USER=moj_uzytkownik
+      # WAŻNE: W produkcji użyj mechanizmu sekretów Docker lub zmiennych środowiskowych
+      # wstrzykiwanych z zewnątrz, a nie hasła wprost w pliku!
+      - POSTGRES_PASSWORD=super_tajne_haslo
+    # Opcjonalne mapowanie portu bazy danych na hosta
+    # Przydatne, jeśli chcesz połączyć się z bazą z narzędzia na swoim komputerze (np. pgAdmin, DBeaver)
+    # Nie jest wymagane do komunikacji między kontenerami 'webapp' i 'db'
+    # ports:
+    #   - "5432:5432"
+
+  # ----- Serwis Cache (Redis) -----
+  cache:
+    # Użycie oficjalnego obrazu Redis (wersja 7, wariant Alpine)
+    image: redis:7-alpine
+    # Redis domyślnie przechowuje dane w pamięci, więc wolumen nie jest tu zwykle
+    # konieczny, chyba że używasz mechanizmów persystencji Redis (np. RDB, AOF)
+    # i chcesz, aby dane przetrwały restarty.
+    # volumes:
+    #  - redis_data:/data
+    # Opcjonalne mapowanie portu Redis na hosta
+    # Przydatne do monitorowania lub debugowania Redis z hosta
+    # ports:
+    #   - "6379:6379"
+
+# ----- Definicja Nazwanych Wolumenów -----
+# Wolumeny zdefiniowane tutaj są zarządzane przez Docker i przetrwają cykl życia kontenerów
+volumes:
+  postgres_data: # Wolumen dla danych PostgreSQL
+  # redis_data: # Opcjonalny wolumen dla danych Redis, jeśli potrzebna persystencja
