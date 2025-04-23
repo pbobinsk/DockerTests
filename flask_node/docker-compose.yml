@@ -1,0 +1,24 @@
+version: '3.8' # Wersja specyfikacji Compose (opcjonalna w nowszych wersjach Docker Compose)
+
+services:
+  # Definicja serwisu aplikacji Python/Flask
+  python_web_app:
+    build: ../../PythonTests/docker_python_web_app  # Ścieżka do kontekstu budowania obrazu (gdzie jest Dockerfile)
+    ports:
+      - "5000:5000" # Mapuj port 5000 hosta na port 5000 kontenera
+    depends_on:
+      - node_api_service # Określ, że ten serwis powinien startować PO serwisie node_api_service
+    environment:
+      - FLASK_ENV=development # Przykładowa zmienna środowiskowa (opcjonalna)
+      - PYTHONUNBUFFERED=1   # Zapewnia, że logi Pythona pojawiają się od razu
+      - NODE_API_URL=http://node_api_service:3000/api/data
+
+  # Definicja serwisu API Node.js
+  node_api_service:
+    build: ../../JavaScriptTests/docker_node_api_service # Ścieżka do kontekstu budowania obrazu
+    # Nie mapujemy portu Node.js na hosta, ponieważ komunikuje się z nim tylko
+    # inny kontener (python_web_app) w tej samej sieci Dockerowej.
+    # Port 3000 jest dostępny dla innych serwisów w sieci Compose pod nazwą 'node_api_service'.
+
+# Docker Compose automatycznie tworzy sieć dla tych serwisów,
+# pozwalając im komunikować się ze sobą używając nazw serwisów jako hostnames.
