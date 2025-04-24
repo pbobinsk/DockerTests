@@ -1,5 +1,3 @@
-version: '3.8' # Wersja specyfikacji Compose (opcjonalna w nowszych wersjach Docker Compose)
-
 services:
   # Definicja serwisu aplikacji Python/Flask
   python_web_app:
